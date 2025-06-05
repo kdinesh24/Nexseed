@@ -1,0 +1,25 @@
+{
+    "name": "nexseed",
+    "version": "1.0.0",
+    "description": "Create a fullstack Next.js project with modern tooling",
+    "main": "bin/index.js",
+    "type": "module",
+    "bin": {
+      "nexseed": "./bin/index.js"
+    },
+    "scripts": {
+      "dev": "node bin/index.js",
+      "build": "echo 'No build step needed'",
+      "test": "echo 'No tests specified'"
+    },
+    "keywords": ["nextjs", "cli", "typescript", "tailwind"],
+    "author": "Your Name",
+    "license": "MIT",
+    "dependencies": {
+      "chalk": "^5.3.0",
+      "commander": "^11.1.0",
+      "fs-extra": "^11.2.0",
+      "inquirer": "^9.2.12",
+      "ora": "^7.0.1"
+    }
+  }
