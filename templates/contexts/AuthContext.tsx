@@ -2,13 +2,16 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import toast from 'react-hot-toast';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  createdAt: string;
+  createdAt?: string;
+  image?: string;
+  provider?: 'credentials' | 'google';
 }
 
 interface AuthContextType {
@@ -27,11 +30,23 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [customUser, setCustomUser] = useState<User | null>(null);
+  const [customLoading, setCustomLoading] = useState(true);
+  const { data: session, status } = useSession();
   const router = useRouter();
 
-  const isAuthenticated = !!user;
+  // Combine both authentication states
+  const isAuthenticated = status === "authenticated" || !!customUser;
+  const loading = status === "loading" || customLoading;
+
+  // Prioritize NextAuth user over custom user
+  const user: User | null = session?.user ? {
+    id: session.user.email || '',
+    name: session.user.name || '',
+    email: session.user.email || '',
+    image: session.user.image || undefined,
+    provider: 'google'
+  } : customUser;
 
   useEffect(() => {
     checkAuth();
@@ -41,7 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) {
-        setLoading(false);
+        setCustomLoading(false);
         return;
       }
 
@@ -54,18 +69,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setUser(data.user);
+        setCustomUser({
+          ...data.user,
+          provider: 'credentials'
+        });
       } else {
         // Token is invalid, remove it
         localStorage.removeItem('auth_token');
-        setUser(null);
+        setCustomUser(null);
       }
     } catch (error) {
       console.error('Auth check error:', error);
       localStorage.removeItem('auth_token');
-      setUser(null);
+      setCustomUser(null);
     } finally {
-      setLoading(false);
+      setCustomLoading(false);
     }
   };
 
@@ -83,7 +101,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         localStorage.setItem('auth_token', data.token);
-        setUser(data.user);
+        setCustomUser({
+          ...data.user,
+          provider: 'credentials'
+        });
         toast.success('Welcome back! Login successful.');
         return true;
       } else {
@@ -115,7 +136,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         localStorage.setItem('auth_token', data.token);
-        setUser(data.user);
+        setCustomUser({
+          ...data.user,
+          provider: 'credentials'
+        });
         toast.success('Account created successfully! Welcome aboard.');
         return true;
       } else {
@@ -129,9 +153,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Sign out from both systems
+    if (session) {
+      await signOut({ redirect: false });
+    }
+    
+    // Clear custom auth
     localStorage.removeItem('auth_token');
-    setUser(null);
+    setCustomUser(null);
+    
     toast.success('Logged out successfully. See you soon!');
     router.push('/');
   };

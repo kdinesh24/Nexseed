@@ -8,6 +8,7 @@ import path from "path";
 import { execSync } from "child_process";
 import inquirer from "inquirer";
 import { fileURLToPath } from "url";
+import { showWelcomeBanner, showProjectCreationBanner, showCompletionBanner } from "./banner.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -199,8 +200,9 @@ async function createProject(config) {
   console.log("\n" + chalk.blue("Setting up your project...\n"));
 
   const structureSpinner = ora({
-    text: "Creating project structure...",
-    spinner: "dots12",
+    text: chalk.cyan("Creating project structure..."),
+    spinner: "bouncingBar",
+    color: "cyan"
   }).start();
 
   try {
@@ -233,8 +235,9 @@ async function createProject(config) {
 
   if (config.installDependencies) {
     const installSpinner = ora({
-      text: "Installing dependencies with Bun...",
-      spinner: "bouncingBar",
+      text: chalk.yellow("Installing dependencies with Bun..."),
+      spinner: "earth",
+      color: "yellow"
     }).start();
 
     try {
@@ -252,8 +255,9 @@ async function createProject(config) {
 
   if (config.setupShadcn && config.installDependencies) {
     const shadcnSpinner = ora({
-      text: "Setting up shadcn/ui...",
-      spinner: "earth",
+      text: chalk.magenta("Setting up shadcn/ui..."),
+      spinner: "moon",
+      color: "magenta"
     }).start();
 
     try {
@@ -265,7 +269,8 @@ async function createProject(config) {
     }
   }
 
-  console.log("\n" + chalk.green("🎉 Project created successfully!\n"));
+  // Show completion banner instead of simple text
+  showCompletionBanner(finalProjectName);
 
   const nextSteps = [];
   if (!isCurrentDir) {
@@ -275,22 +280,22 @@ async function createProject(config) {
     config.installDependencies ? "bun dev" : "bun install && bun dev",
   );
 
-  console.log(chalk.bold("Next steps:"));
+  console.log(chalk.bold("🚀 Next steps:"));
   nextSteps.forEach((step, i) => {
-    console.log(`  ${i + 1}. ${chalk.cyan(step)}`);
+    console.log(`  ${chalk.cyan(`${i + 1}.`)} ${chalk.white(step)}`);
   });
 
   console.log(
     "\n" +
-      chalk.gray("Your app includes:") +
+      chalk.gray("📦 Your app includes:") +
       "\n" +
-      chalk.gray("  • Landing page at /") +
+      chalk.gray("  • 🏠 Landing page at /") +
       "\n" +
-      chalk.gray("  • Login page at /login") +
+      chalk.gray("  • 🔐 Login page at /login") +
       "\n" +
-      chalk.gray("  • Sign up page at /signup") +
+      chalk.gray("  • ✍️  Sign up page at /signup") +
       "\n" +
-      chalk.gray("  • Home page at /home") +
+      chalk.gray("  • 🏡 Home page at /home") +
       "\n"
   );
 }
@@ -306,10 +311,8 @@ program
   .option("--no-deps", "skip dependency installation")
   .option("--no-shadcn", "skip shadcn/ui setup")
   .action(async (projectName, options) => {
-    console.log(
-      chalk.blue.bold("\n🚀 Welcome to nexseed!\n") +
-        chalk.gray("Let's build something amazing together.\n")
-    );
+    // Show the fancy ASCII banner first
+    await showWelcomeBanner();
 
     if (!checkPrerequisites()) {
       process.exit(1);
@@ -334,6 +337,9 @@ program
     } else {
       config = await getProjectConfig(projectName);
     }
+
+    // Show project creation banner
+    showProjectCreationBanner(config.projectName);
 
     await createProject(config);
   });
